@@ -9,7 +9,10 @@
 #include <QFile>
 #include <QCryptographicHash>
 
-#include <qsqlquery.h>
+#include <QSqlQuery>
+#include <QSqlQueryModel>
+#include <QStandardItemModel>
+#include <QItemDelegate>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,8 +31,12 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void viewOfTable();
+
 private:
     Ui::MainWindow *ui;
     DBManager*db;
+    QSqlQueryModel*queryModel;
+    QPixmap pixmap;
 };
 #endif // MAINWINDOW_H

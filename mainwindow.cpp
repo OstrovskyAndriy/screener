@@ -8,6 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     db=DBManager::getInstance();
     //db->connectToDataBase();
+
+    queryModel=new QSqlQueryModel;
 }
 
 MainWindow::~MainWindow()
@@ -67,12 +69,48 @@ void MainWindow::on_pushButton_clicked()
         QByteArray data = q.value("image").toByteArray();
 
         // Створити QPixmap з масиву байтів
-        QPixmap pixmap;
+
         pixmap.loadFromData(data);
         ui->label->setPixmap(pixmap);
         ui->label->setScaledContents(true);
 
         // Використовуйте pixmap у вашому коді
     }
+
+    viewOfTable();
+}
+
+void MainWindow::viewOfTable()
+{
+    QSqlQuery query("SELECT image FROM images");
+    QStandardItemModel *model = new QStandardItemModel;
+
+    // Додати заголовки стовпців
+    model->setHorizontalHeaderLabels(QStringList() << "Image");
+
+    // Обробити результат запиту
+    QPixmap pixmap;
+    QPixmap scaledPixmap;
+    while (query.next()) {
+        QByteArray data = query.value(0).toByteArray();
+        pixmap.loadFromData(data);
+        QStandardItem *item = new QStandardItem;
+
+        // Підігнати розмір зображення під розмір tableView
+        scaledPixmap = pixmap.scaled(ui->tableView->width(), ui->tableView->height(),
+                                             Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        item->setData(QVariant(scaledPixmap), Qt::DecorationRole);
+        model->appendRow(item);
+    }
+
+    // Відобразити дані у QTableView
+    ui->tableView->setModel(model);
+    ui->tableView->setColumnWidth(0,scaledPixmap.width());
+    ui->tableView->verticalHeader()->setDefaultSectionSize(scaledPixmap.height());
+    ui->tableView->verticalHeader()->setVisible(false);
+    ui->tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+
 }
 
