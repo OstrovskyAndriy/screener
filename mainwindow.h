@@ -27,9 +27,9 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_startButton_clicked();
-
-    void on_pushButton_clicked();
+    void makeScreenshot();
+    void stopScreenhoting();
+    void startTimer();
 
     void viewOfTable();
 
@@ -38,5 +38,6 @@ private:
     DBManager*db;
     QSqlQueryModel*queryModel;
     QPixmap pixmap;
+    QTimer *timer;
 };
 #endif // MAINWINDOW_H

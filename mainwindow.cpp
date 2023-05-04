@@ -10,29 +10,42 @@ MainWindow::MainWindow(QWidget *parent)
     //db->connectToDataBase();
 
     queryModel=new QSqlQueryModel;
+    timer=new QTimer(this);
+
+    connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::makeScreenshot);
+    connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::startTimer);
+    connect(timer, &QTimer::timeout, this, &MainWindow::makeScreenshot);
+
+    viewOfTable();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete timer;
 }
 
 
-void MainWindow::on_startButton_clicked()
+void MainWindow::makeScreenshot()
 {
+    disconnect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::makeScreenshot);
+    connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::stopScreenhoting);
+
     QScreen *screen = QGuiApplication::primaryScreen();
 
-    // Take a screenshot of the screen and save it to a QPixmap object
+    // зробити скрін і збереги його в QPixmap
     QPixmap screenshot = screen->grabWindow(0);
 
-    // Save the screenshot to a file
+    // зберегти скріншот як тимчасовий файл
     screenshot.save("./screenshot.png");
 
     QString filePath = "./screenshot.png";
     QFile file(filePath);
 
     if (file.open(QIODevice::ReadOnly)) {
+        //клас містить набір функцій хешування, включаючи MD5, SHA-1, SHA-256 та інші
         QCryptographicHash hash(QCryptographicHash::Sha256);
+
         if (hash.addData(&file)) {
             QByteArray result = hash.result();
             QString hashStr = QString(result.toHex());
@@ -45,44 +58,50 @@ void MainWindow::on_startButton_clicked()
 
             db->insert(1,bytes,hashStr);
 
+            this->viewOfTable();
 
-        } else {
+        }
+        else {
             qWarning() << "Failed to add data to hash.";
         }
         file.close();
-    } else {
+    }
+    else {
         qWarning() << "Failed to open file" << filePath;
     }
+
+    ui->startAndStop->setText("stop");
 }
 
-
-void MainWindow::on_pushButton_clicked()
+void MainWindow::stopScreenhoting()
 {
-    QSqlQuery q(db->getDB());
+    disconnect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::stopScreenhoting);
+    connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::makeScreenshot);
 
-    QString query = "SELECT image FROM images WHERE id = :id";
-    q.prepare(query);
-    q.bindValue(":id", 1);
 
-    if (q.exec() && q.first()) {
-        // Отримати масив байтів з бази даних
-        QByteArray data = q.value("image").toByteArray();
-
-        // Створити QPixmap з масиву байтів
-
-        pixmap.loadFromData(data);
-        ui->label->setPixmap(pixmap);
-        ui->label->setScaledContents(true);
-
-        // Використовуйте pixmap у вашому коді
-    }
-
-    viewOfTable();
+    ui->startAndStop->setText("start");
 }
+
+void MainWindow::startTimer()
+{
+    if (!timer->isActive()) {
+        // Встановлюємо інтервал на 5 секунд
+        timer->setInterval(5000);
+        timer->start();
+
+        qDebug() << "Timer started";
+    }
+    else {
+        // Якщо таймер активний, то зупиняємо його
+        timer->stop();
+        qDebug() << "Timer stopped";
+    }
+}
+
 
 void MainWindow::viewOfTable()
 {
-    QSqlQuery query("SELECT image FROM images");
+    QSqlQuery query("SELECT image FROM images ORDER BY id DESC");
     QStandardItemModel *model = new QStandardItemModel;
 
     // Додати заголовки стовпців
@@ -98,7 +117,7 @@ void MainWindow::viewOfTable()
 
         // Підігнати розмір зображення під розмір tableView
         scaledPixmap = pixmap.scaled(ui->tableView->width(), ui->tableView->height(),
-                                             Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                                     Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         item->setData(QVariant(scaledPixmap), Qt::DecorationRole);
         model->appendRow(item);
@@ -111,6 +130,4 @@ void MainWindow::viewOfTable()
     ui->tableView->verticalHeader()->setVisible(false);
     ui->tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-
 }
-

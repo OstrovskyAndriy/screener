@@ -113,4 +113,3 @@ QString DBManager::getUsersTableName()
 {
     return "users";
 }
-
