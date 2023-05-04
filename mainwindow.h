@@ -14,6 +14,7 @@
 #include <QStandardItemModel>
 #include <QItemDelegate>
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -30,6 +31,9 @@ private slots:
     void makeScreenshot();
     void stopScreenhoting();
     void startTimer();
+    QPixmap getLastScreenshot();
+
+    float compareImages(const QPixmap &img1,const QPixmap &img2);
 
     void viewOfTable();
 

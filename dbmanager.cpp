@@ -68,7 +68,7 @@ bool DBManager::createTables()
 
     if(!query.exec("CREATE TABLE images ("
                    "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                   "percent INTEGER,"
+                   "percent TEXT,"
                    "image BLOB,"
                    "hash TEXT);"))
     {
@@ -80,7 +80,7 @@ bool DBManager::createTables()
         return true;
 }
 
-bool DBManager::insert(int percent,const QByteArray& screen, const QString &hash) const
+bool DBManager::insert(const QString& percent,const QByteArray& screen, const QString &hash) const
 {
     QSqlQuery query;
 

@@ -29,7 +29,7 @@ public:
 
     void connectToDataBase();
     QSqlDatabase getDB();
-    bool insert(int percent,const QByteArray& screen,const QString &hash) const;
+    bool insert(const QString& percent,const QByteArray& screen,const QString &hash) const;
 
     QString getAudioTableName();
     QString getUsersTableName();
