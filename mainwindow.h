@@ -14,6 +14,7 @@
 #include <QStandardItemModel>
 #include <QItemDelegate>
 
+#include <QtConcurrent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,7 +34,10 @@ private slots:
     void startTimer();
     QPixmap getLastScreenshot();
 
-    float compareImages(const QPixmap &img1,const QPixmap &img2);
+    //якщо функція не статична то вибиває помилка бо хочу передати назву функції як вказівник на функцію
+    static float compareImagesInThread(const QPixmap &img1,const QPixmap &img2);
+
+    void handleResult(float result);
 
     void viewOfTable();
 
@@ -43,5 +47,7 @@ private:
     QSqlQueryModel*queryModel;
     QPixmap pixmap;
     QTimer *timer;
+
+
 };
 #endif // MAINWINDOW_H

@@ -40,7 +40,7 @@ void MainWindow::makeScreenshot()
 
     // зробити скрін і збереги його в QPixmap
     QPixmap screenshot = screen->grabWindow(0);
-
+    screenshot.save("./screenshot.png");
 
     QPixmap lastScreen;
     QString filePath = "./screenshot.png";
@@ -48,7 +48,8 @@ void MainWindow::makeScreenshot()
     float percent;
 
     lastScreen=getLastScreenshot();
-    percent=compareImages(screenshot,lastScreen);
+
+    QFuture<float> otherThread=QtConcurrent::run(compareImagesInThread,screenshot,lastScreen);
 
     if (file.open(QIODevice::ReadOnly)) {
         //клас містить набір функцій хешування, включаючи MD5, SHA-1, SHA-256 та інші
@@ -63,6 +64,8 @@ void MainWindow::makeScreenshot()
             QBuffer buffer(&bytes);
             buffer.open(QIODevice::WriteOnly);
             screenshot.save(&buffer, "PNG");
+
+            percent=otherThread.result();
 
             db->insert(QString::number(percent,'f',2),bytes,hashStr);
 
@@ -93,7 +96,7 @@ void MainWindow::stopScreenhoting()
 void MainWindow::startTimer()
 {
     if (!timer->isActive()) {
-        // Встановлюємо інтервал на 5 секунд
+        // Встановлюємо інтервал на хвилину
         timer->setInterval(5000);
         timer->start();
 
@@ -122,7 +125,8 @@ QPixmap MainWindow::getLastScreenshot()
 }
 
 
-float MainWindow::compareImages(const QPixmap &image1, const QPixmap &image2)
+
+float MainWindow::compareImagesInThread(const QPixmap &image1, const QPixmap &image2)
 {
     QImage img1 = image1.scaled(image2.size()).toImage();
     QImage img2 = image2.toImage();
