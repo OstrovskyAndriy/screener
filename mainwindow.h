@@ -10,11 +10,11 @@
 #include <QCryptographicHash>
 
 #include <QSqlQuery>
-#include <QSqlQueryModel>
 #include <QStandardItemModel>
-#include <QItemDelegate>
 
 #include <QtConcurrent>
+
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -37,17 +37,15 @@ private slots:
     //якщо функція не статична то вибиває помилка бо хочу передати назву функції як вказівник на функцію
     static float compareImagesInThread(const QPixmap &img1,const QPixmap &img2);
 
-    void handleResult(float result);
-
     void viewOfTable();
+    void addRowToTable();
 
 private:
     Ui::MainWindow *ui;
     DBManager*db;
-    QSqlQueryModel*queryModel;
     QPixmap pixmap;
+    QByteArray data;
     QTimer *timer;
-
-
+    QStandardItemModel *model=nullptr;
 };
 #endif // MAINWINDOW_H

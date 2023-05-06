@@ -9,15 +9,14 @@ MainWindow::MainWindow(QWidget *parent)
     db=DBManager::getInstance();
     //db->connectToDataBase();
 
-    queryModel=new QSqlQueryModel;
     timer=new QTimer(this);
 
     connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::makeScreenshot);
     connect(ui->startAndStop,&QPushButton::clicked,this,&MainWindow::startTimer);
     connect(timer, &QTimer::timeout, this, &MainWindow::makeScreenshot);
 
-    //    ui->tableView->setSelectionMode(QAbstractItemView::NoSelection);
-    //    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableView->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     this->setFixedSize(this->geometry().width(),this->geometry().height());
 
@@ -28,6 +27,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
     delete timer;
+    delete model;
 }
 
 
@@ -42,14 +42,13 @@ void MainWindow::makeScreenshot()
     QPixmap screenshot = screen->grabWindow(0);
     screenshot.save("./screenshot.png");
 
-    QPixmap lastScreen;
     QString filePath = "./screenshot.png";
     QFile file(filePath);
     float percent;
 
-    lastScreen=getLastScreenshot();
+    pixmap=getLastScreenshot();
 
-    QFuture<float> otherThread=QtConcurrent::run(compareImagesInThread,screenshot,lastScreen);
+    QFuture<float> otherThread=QtConcurrent::run(compareImagesInThread,screenshot,pixmap);
 
     if (file.open(QIODevice::ReadOnly)) {
         //клас містить набір функцій хешування, включаючи MD5, SHA-1, SHA-256 та інші
@@ -67,9 +66,19 @@ void MainWindow::makeScreenshot()
 
             percent=otherThread.result();
 
-            db->insert(QString::number(percent,'f',2),bytes,hashStr);
+            db->insert(QString::number(percent,'f',1),bytes,hashStr);
 
-            this->viewOfTable();
+            //коли таблиця новостворена або пуста, дані з неї не будуть виводитись без цього коду
+            //Qpixpam не заповниться і не встановиться розмір стовпчика для зображення
+            //тому дописаний цей код
+            if(model->rowCount()==1){
+                delete model;
+                model=nullptr;
+                this->viewOfTable();
+            }
+            else{
+                this->addRowToTable();
+            }
 
         }
         else {
@@ -117,7 +126,7 @@ QPixmap MainWindow::getLastScreenshot()
     QPixmap lastImg;
 
     if(query.next()){
-        QByteArray data = query.value(0).toByteArray();
+        data = query.value(0).toByteArray();
         lastImg.loadFromData(data);
 
     }
@@ -144,44 +153,72 @@ float MainWindow::compareImagesInThread(const QPixmap &image1, const QPixmap &im
     float similarityPercentage = 100.0 - (differentPixels / (double)(img1.width() * img1.height())) * 100.0;
 
     return similarityPercentage;
+
 }
 
 
 void MainWindow::viewOfTable()
 {
+    if(!model){
+        QSqlQuery query("SELECT percent, image FROM images ORDER BY id DESC");
+        model = new QStandardItemModel;
 
-    QSqlQuery query("SELECT percent, image FROM images ORDER BY id DESC");
-    QStandardItemModel *model = new QStandardItemModel;
+        model->setColumnCount(2);
+        model->setHeaderData(0, Qt::Horizontal, "%");
+        model->setHeaderData(1, Qt::Horizontal, "Screenshot");
 
-    model->setColumnCount(2);
-    model->setHeaderData(0, Qt::Horizontal, "%");
-    model->setHeaderData(1, Qt::Horizontal, "Screenshot");
+        // Обробити результат запиту
+        while (query.next()) {
+            QString percent = query.value(0).toString();
+            data = query.value(1).toByteArray();
 
-    // Обробити результат запиту
-    QPixmap pixmap;
-    while (query.next()) {
+            pixmap.loadFromData(data);
+
+            QStandardItem *percentItem = new QStandardItem(percent);
+            QStandardItem *imageItem = new QStandardItem;
+            // деструктори потім не потрібно викликати бо QStandardItemModel сам звільнить пам'ять
+
+            // Підігнати розмір зображення під розмір tableView
+            pixmap = pixmap.scaled(ui->tableView->width()-48, ui->tableView->height()-29,
+                                   Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+            imageItem->setData(QVariant(pixmap), Qt::DecorationRole);
+            model->appendRow({ percentItem, imageItem });
+        }
+
+        ui->tableView->setModel(model);
+        ui->tableView->verticalHeader()->setDefaultSectionSize(pixmap.height());
+        ui->tableView->verticalHeader()->setVisible(false);
+        ui->tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+        ui->tableView->setColumnWidth(0,45);
+        ui->tableView->setColumnWidth(1,pixmap.width());
+
+        qDebug()<<ui->tableView->width();
+    }
+
+    else{
+        this->addRowToTable();
+    }
+}
+
+void MainWindow::addRowToTable()
+{
+    QSqlQuery query("SELECT percent, image FROM images ORDER BY id DESC LIMIT 1");
+    if (query.next()) {
         QString percent = query.value(0).toString();
-        QByteArray data = query.value(1).toByteArray();
+        data = query.value(1).toByteArray();
 
         pixmap.loadFromData(data);
+
+        // створюємо новий рядок з отриманими даними та додаємо його до моделі таблиці
         QStandardItem *percentItem = new QStandardItem(percent);
         QStandardItem *imageItem = new QStandardItem;
 
-        // Підігнати розмір зображення під розмір tableView
-        pixmap = pixmap.scaled(ui->tableView->width()-43, ui->tableView->height()-26,
-                                     Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        pixmap = pixmap.scaled(ui->tableView->width()-ui->tableView->columnWidth(0), ui->tableView->height(),
+                               Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         imageItem->setData(QVariant(pixmap), Qt::DecorationRole);
-        model->appendRow({ percentItem, imageItem });
+        model->insertRow(0,{ percentItem, imageItem });
     }
-
-    ui->tableView->setModel(model);
-    ui->tableView->verticalHeader()->setDefaultSectionSize(pixmap.height());
-    ui->tableView->verticalHeader()->setVisible(false);
-    ui->tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    ui->tableView->setColumnWidth(0,40);
-    ui->tableView->setColumnWidth(1,pixmap.width());
-
-    qDebug()<<ui->tableView->width();
 }
