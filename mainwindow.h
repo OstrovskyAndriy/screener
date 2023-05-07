@@ -13,7 +13,7 @@
 #include <QStandardItemModel>
 
 #include <QtConcurrent>
-
+#include <QtMath>
 
 
 QT_BEGIN_NAMESPACE
@@ -39,6 +39,8 @@ private slots:
 
     void viewOfTable();
     void addRowToTable();
+
+    void on_closebutton_clicked();
 
 private:
     Ui::MainWindow *ui;

@@ -106,7 +106,7 @@ void MainWindow::startTimer()
 {
     if (!timer->isActive()) {
         // Встановлюємо інтервал на хвилину
-        timer->setInterval(5000);
+        timer->setInterval(60000);
         timer->start();
 
         qDebug() << "Timer started";
@@ -151,7 +151,9 @@ float MainWindow::compareImagesInThread(const QPixmap &image1, const QPixmap &im
     }
 
     float similarityPercentage = 100.0 - (differentPixels / (double)(img1.width() * img1.height())) * 100.0;
-
+    if(qIsNaN(similarityPercentage)){
+        return 0.0;
+    }
     return similarityPercentage;
 
 }
@@ -222,3 +224,9 @@ void MainWindow::addRowToTable()
         model->insertRow(0,{ percentItem, imageItem });
     }
 }
+
+void MainWindow::on_closebutton_clicked()
+{
+    QApplication::exit();
+}
+

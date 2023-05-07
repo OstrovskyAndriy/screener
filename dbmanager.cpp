@@ -103,13 +103,3 @@ bool DBManager::insert(const QString& percent,const QByteArray& screen, const QS
         return true;
 }
 
-
-QString DBManager::getAudioTableName()
-{
-    return "audioList";
-}
-
-QString DBManager::getUsersTableName()
-{
-    return "users";
-}

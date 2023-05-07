@@ -31,9 +31,6 @@ public:
     QSqlDatabase getDB();
     bool insert(const QString& percent,const QByteArray& screen,const QString &hash) const;
 
-    QString getAudioTableName();
-    QString getUsersTableName();
-
 };
 
 #endif // DBMANAGER_H
