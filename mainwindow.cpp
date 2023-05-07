@@ -20,7 +20,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->setFixedSize(this->geometry().width(),this->geometry().height());
 
-    viewOfTable();
+    QSqlQuery query("SELECT COUNT(*) FROM images;");
+    query.next();
+    int count = query.value(0).toInt();
+    if(count!=0){
+        viewOfTable();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -68,17 +73,7 @@ void MainWindow::makeScreenshot()
 
             db->insert(QString::number(percent,'f',1),bytes,hashStr);
 
-            //коли таблиця новостворена або пуста, дані з неї не будуть виводитись без цього коду
-            //Qpixpam не заповниться і не встановиться розмір стовпчика для зображення
-            //тому дописаний цей код
-            if(model->rowCount()==1){
-                delete model;
-                model=nullptr;
-                this->viewOfTable();
-            }
-            else{
-                this->addRowToTable();
-            }
+            this->viewOfTable();
 
         }
         else {
