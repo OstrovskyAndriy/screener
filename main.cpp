@@ -4,6 +4,7 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 #include <QAction>
+#include<QKeyEvent>
 
 int main(int argc, char *argv[])
 {
